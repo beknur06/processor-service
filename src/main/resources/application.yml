@@ -1,0 +1,57 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: processor-service
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+    listener:
+      simple:
+        concurrency: 2
+        max-concurrency: 4
+        prefetch: 50
+        acknowledge-mode: auto
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+rabbitmq:
+  queue:
+    processor: telemetry.processor
+
+redis:
+  channel:
+    telemetry: telemetry
+    processed: processed
+  key:
+    last-state-prefix: last_state
+    ttl-seconds: 300
+
+clickhouse:
+  url: jdbc:clickhouse://${CLICKHOUSE_HOST:localhost}:${CLICKHOUSE_PORT:8123}/digitaltwin
+  username: ${CLICKHOUSE_USER:default}
+  password: ${CLICKHOUSE_PASS:}
+
+processor:
+  ema:
+    alpha: 0.3
+    enabled: true
+  batch:
+    size: 100
+    flush-interval-ms: 500
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
