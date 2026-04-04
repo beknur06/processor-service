@@ -6,7 +6,7 @@ spring:
     name: processor-service
 
   rabbitmq:
-    host: ${RABBITMQ_HOST:${{ rabbitmq.RAILWAY_PRIVATE_DOMAIN }}}
+    host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:guest}
     password: ${RABBITMQ_PASS:guest}
@@ -18,7 +18,7 @@ spring:
         acknowledge-mode: auto
 
   datasource:
-    url: ${DB_URL:${{ Postgres.DATABASE_URL }}}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/telemetry}
     username: ${DB_USER:postgres}
     password: ${DB_PASS:postgres}
     driver-class-name: org.postgresql.Driver
@@ -31,7 +31,7 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST:${{ Redis.RAILWAY_PRIVATE_DOMAIN }}}
+      host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
 rabbitmq:
@@ -47,7 +47,7 @@ redis:
     ttl-seconds: 300
 
 clickhouse:
-  url: ${SPRING_CLICKHOUSE_URL:jdbc:ch://${{ clickhouse-server.RAILWAY_PRIVATE_DOMAIN }}:8123/digitaltwin?ssl=false&connect_timeout=10000&socket_timeout=300000&compress=0}
+  url: ${SPRING_CLICKHOUSE_URL:jdbc:ch://localhost:8123/digitaltwin?ssl=false&connect_timeout=10000&socket_timeout=300000&compress=0}
   username: ${CLICKHOUSE_USER:app}
   password: ${CLICKHOUSE_PASS:app123}
 
