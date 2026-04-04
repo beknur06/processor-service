@@ -34,7 +34,7 @@ public class NormalizationService {
         Map.entry("brake_force",            new ParamRange(0, 350, -1, 500)),
 
         // Температуры (выше = хуже)
-        Map.entry("coolant_temp",           new ParamRange(70, 85, 50, 95)),
+        Map.entry("coolant_temp",           new ParamRange(60, 90, 40, 105)),
         Map.entry("oil_temp",               new ParamRange(65, 85, 40, 100)),
         Map.entry("exhaust_temp",           new ParamRange(350, 520, 150, 600)),
         Map.entry("traction_motor_temp",    new ParamRange(60, 120, 30, 160)),
