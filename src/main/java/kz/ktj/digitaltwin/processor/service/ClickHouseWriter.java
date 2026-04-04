@@ -7,6 +7,7 @@ import kz.ktj.digitaltwin.processor.config.ProcessorProperties;
 import kz.ktj.digitaltwin.processor.dto.ProcessedTelemetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -48,18 +49,18 @@ public class ClickHouseWriter {
     private final Counter flushErrors;
     private final Timer flushDuration;
 
-    public ClickHouseWriter(DataSource dataSource,
-                             ProcessorProperties properties,
-                             MeterRegistry meterRegistry) {
+    public ClickHouseWriter(@Qualifier("clickHouseDataSource") DataSource dataSource,
+                            ProcessorProperties properties,
+                            MeterRegistry meterRegistry) {
         this.dataSource = dataSource;
         this.batchSize = properties.getBatch().getSize();
 
         this.rowsWritten = Counter.builder("processor.clickhouse.rows_written")
-            .register(meterRegistry);
+                .register(meterRegistry);
         this.flushErrors = Counter.builder("processor.clickhouse.flush_errors")
-            .register(meterRegistry);
+                .register(meterRegistry);
         this.flushDuration = Timer.builder("processor.clickhouse.flush_duration")
-            .register(meterRegistry);
+                .register(meterRegistry);
     }
 
     /**
