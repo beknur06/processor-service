@@ -4,6 +4,7 @@ server:
 spring:
   application:
     name: processor-service
+
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
@@ -15,6 +16,17 @@ spring:
         max-concurrency: 4
         prefetch: 50
         acknowledge-mode: auto
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/telemetry}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASS:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
 
   data:
     redis:
@@ -34,9 +46,9 @@ redis:
     ttl-seconds: 300
 
 clickhouse:
-  url: jdbc:clickhouse://${CLICKHOUSE_HOST:localhost}:${CLICKHOUSE_PORT:8123}/digitaltwin
-  username: ${CLICKHOUSE_USER:default}
-  password: ${CLICKHOUSE_PASS:}
+  url: jdbc:ch://localhost:8123/digitaltwin?ssl=false&connect_timeout=10000&socket_timeout=300000&compress=0
+  username: ${CLICKHOUSE_USER:app}
+  password: ${CLICKHOUSE_PASS:app123}
 
 processor:
   ema:
@@ -54,4 +66,3 @@ management:
   endpoint:
     health:
       show-details: always
-
