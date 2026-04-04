@@ -47,7 +47,7 @@ redis:
     ttl-seconds: 300
 
 clickhouse:
-  url: jdbc:ch://localhost:8123/digitaltwin?ssl=false&connect_timeout=10000&socket_timeout=300000&compress=0
+  url: ${SPRING_CLICKHOUSE_URL:jdbc:ch://localhost:8123/digitaltwin?ssl=false&connect_timeout=10000&socket_timeout=300000&compress=0}
   username: ${CLICKHOUSE_USER:app}
   password: ${CLICKHOUSE_PASS:app123}
 
