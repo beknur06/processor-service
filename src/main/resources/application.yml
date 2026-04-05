@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: processor-service
+    name: ktj-telemetry-processor
 
   rabbitmq:
     host: ${SPRING_RABBITMQ_HOST:localhost}
