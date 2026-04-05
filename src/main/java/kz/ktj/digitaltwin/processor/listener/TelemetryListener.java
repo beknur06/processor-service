@@ -7,20 +7,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
-/**
- * RabbitMQ consumer.
- *
- * Слушает очередь telemetry.processor и передаёт каждое
- * сообщение в ProcessingPipeline.
- *
- * Конфигурация concurrency в application.properties:
- *   spring.rabbitmq.listener.simple.concurrency=2
- *   spring.rabbitmq.listener.simple.max-concurrency=4
- *   spring.rabbitmq.listener.simple.prefetch=50
- *
- * При x10 нагрузке Spring AMQP автоматически масштабирует
- * число consumer threads до max-concurrency.
- */
 @Component
 public class TelemetryListener {
 

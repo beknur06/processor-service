@@ -12,13 +12,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Map;
 
-/**
- * Главный пайплайн обработки телеметрии.
- *
- *  RabbitMQ → [EMA] → [Normalize] → [ClickHouse] + [Redis pub/sub]
- *
- * Каждый шаг изолирован — можно отключить EMA, заменить хранилище и т.д.
- */
 @Service
 public class ProcessingPipeline {
 
@@ -44,31 +37,20 @@ public class ProcessingPipeline {
         this.clickHouseWriter = clickHouseWriter;
         this.redisPublisher = redisPublisher;
 
-        this.processedCounter = Counter.builder("processor.messages.processed")
-            .register(meterRegistry);
-        this.errorCounter = Counter.builder("processor.messages.errors")
-            .register(meterRegistry);
+        this.processedCounter = Counter.builder("processor.messages.processed").register(meterRegistry);
+        this.errorCounter = Counter.builder("processor.messages.errors").register(meterRegistry);
         this.processingTimer = Timer.builder("processor.processing.duration")
             .description("End-to-end processing time per message")
             .register(meterRegistry);
     }
 
-    /**
-     * Обрабатывает одно входящее сообщение телеметрии.
-     */
     public void process(TelemetryEnvelope envelope) {
         processingTimer.record(() -> {
             try {
                 Map<String, Double> raw = envelope.getParameters();
-
-                // 1. EMA smoothing
-                Map<String, Double> smoothed = emaService.smooth(
-                    envelope.getLocomotiveId(), raw);
-
-                // 2. Normalization (0..1)
+                Map<String, Double> smoothed = emaService.smooth(envelope.getLocomotiveId(), raw);
                 Map<String, Double> normalized = normalizationService.normalize(smoothed);
 
-                // 3. Build processed record
                 ProcessedTelemetry processed = ProcessedTelemetry.builder()
                     .messageId(envelope.getMessageId())
                     .locomotiveId(envelope.getLocomotiveId())
@@ -86,24 +68,16 @@ public class ProcessingPipeline {
                     .odometer(envelope.getOdometer())
                     .build();
 
-                // 4. Write to ClickHouse (batched, async)
                 clickHouseWriter.buffer(processed);
-
-                // 5. Publish to Redis (immediate, for realtime dashboard)
                 redisPublisher.publish(processed);
-
                 processedCounter.increment();
 
                 log.debug("Processed [{}] locomotive={} params={} smoothed={}",
-                    envelope.getMessageId(),
-                    envelope.getLocomotiveId(),
-                    raw.size(),
-                    smoothed.size());
+                    envelope.getMessageId(), envelope.getLocomotiveId(), raw.size(), smoothed.size());
 
             } catch (Exception e) {
                 errorCounter.increment();
-                log.error("Processing failed for [{}]: {}",
-                    envelope.getMessageId(), e.getMessage(), e);
+                log.error("Processing failed for [{}]: {}", envelope.getMessageId(), e.getMessage(), e);
             }
         });
     }

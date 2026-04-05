@@ -46,6 +46,12 @@ public class ClickHouseConfig {
         try (Connection conn = dataSource.getConnection();
              Statement stmt = conn.createStatement()) {
 
+            // Создаем базу данных, если она не существует
+            stmt.execute("CREATE DATABASE IF NOT EXISTS digitaltwin");
+
+            // Явно переключаемся на нужную базу
+            stmt.execute("USE digitaltwin");
+
             //noinspection SqlDialectInspection,SqlNoDataSourceInspection,SqlResolve
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS telemetry_raw (

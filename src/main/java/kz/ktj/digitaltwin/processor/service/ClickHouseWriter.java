@@ -20,16 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-/**
- * Батчевая запись в ClickHouse.
- *
- * Записи накапливаются в in-memory очереди и сбрасываются:
- *  - Каждые 500мс (по таймеру)
- *  - При достижении batch size (100 записей)
- *
- * Каждый параметр становится отдельной строкой в telemetry_raw
- * (ClickHouse оптимизирован для узких таблиц, не для широких).
- */
 @Service
 public class ClickHouseWriter {
 
@@ -54,59 +44,38 @@ public class ClickHouseWriter {
                             MeterRegistry meterRegistry) {
         this.dataSource = dataSource;
         this.batchSize = properties.getBatch().getSize();
-
-        this.rowsWritten = Counter.builder("processor.clickhouse.rows_written")
-                .register(meterRegistry);
-        this.flushErrors = Counter.builder("processor.clickhouse.flush_errors")
-                .register(meterRegistry);
-        this.flushDuration = Timer.builder("processor.clickhouse.flush_duration")
-                .register(meterRegistry);
+        this.rowsWritten = Counter.builder("processor.clickhouse.rows_written").register(meterRegistry);
+        this.flushErrors = Counter.builder("processor.clickhouse.flush_errors").register(meterRegistry);
+        this.flushDuration = Timer.builder("processor.clickhouse.flush_duration").register(meterRegistry);
     }
 
-    /**
-     * Добавляет обработанную телеметрию в буфер.
-     * Каждый параметр → отдельная строка.
-     */
     public void buffer(ProcessedTelemetry telemetry) {
         Timestamp ts = Timestamp.from(telemetry.getTimestamp());
         String locoId = telemetry.getLocomotiveId();
         String locoType = telemetry.getLocomotiveType();
         String phase = telemetry.getPhase();
 
-        // Записываем сглаженные значения (не сырые)
         Map<String, Double> params = telemetry.getSmoothedParameters();
         for (Map.Entry<String, Double> entry : params.entrySet()) {
             buffer.offer(new RowData(ts, locoId, locoType, entry.getKey(), entry.getValue(), phase));
         }
 
-        // Flush если буфер достаточно большой
         if (buffer.size() >= batchSize) {
             flush();
         }
     }
 
-    /**
-     * Периодический flush по таймеру (чтобы не терять данные при низкой нагрузке).
-     */
     @Scheduled(fixedDelayString = "${processor.batch.flush-interval-ms:500}")
     public void scheduledFlush() {
-        if (!buffer.isEmpty()) {
-            flush();
-        }
+        if (!buffer.isEmpty()) flush();
     }
 
-    /**
-     * Сброс буфера в ClickHouse одним batch INSERT.
-     */
     public synchronized void flush() {
         if (buffer.isEmpty()) return;
 
-        // Забираем всё из очереди
         List<RowData> batch = new ArrayList<>();
         RowData row;
-        while ((row = buffer.poll()) != null) {
-            batch.add(row);
-        }
+        while ((row = buffer.poll()) != null) batch.add(row);
 
         flushDuration.record(() -> {
             try (Connection conn = dataSource.getConnection();
@@ -124,13 +93,11 @@ public class ClickHouseWriter {
 
                 ps.executeBatch();
                 rowsWritten.increment(batch.size());
-
                 log.debug("Flushed {} rows to ClickHouse", batch.size());
 
             } catch (Exception e) {
                 flushErrors.increment();
                 log.error("ClickHouse flush failed ({} rows lost): {}", batch.size(), e.getMessage());
-                // В production: retry или запись в fallback-файл
             }
         });
     }

@@ -11,12 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 
-/**
- * Публикация обработанной телеметрии в Redis:
- *
- * 1. SET last_state:{locomotiveId} — последнее полное состояние (для snapshot при WS connect)
- * 2. PUBLISH telemetry:{locomotiveId} — для WebSocket bridge (realtime fan-out к клиентам)
- */
 @Service
 public class RedisPublisher {
 
@@ -41,19 +35,14 @@ public class RedisPublisher {
         this.ttl = Duration.ofSeconds(ttlSeconds);
     }
 
-    /**
-     * Публикует обработанную телеметрию в Redis.
-     */
     public void publish(ProcessedTelemetry telemetry) {
         try {
             String json = objectMapper.writeValueAsString(telemetry);
             String locoId = telemetry.getLocomotiveId();
 
-            // 1. Обновляем last state (для snapshot при подключении нового WS клиента)
             String stateKey = lastStatePrefix + ":" + locoId;
             redis.opsForValue().set(stateKey, json, ttl);
 
-            // 2. Publish в канал (для realtime WebSocket bridge)
             String channel = channelPrefix + ":" + locoId;
             redis.convertAndSend(channel, json);
 
